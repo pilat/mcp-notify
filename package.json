@@ -1,0 +1,54 @@
+{
+  "name": "@pilat/mcp-slack",
+  "version": "1.0.0",
+  "description": "MCP server for sending Slack messages as user (xoxc + cookie auth)",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-slack": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint",
+    "test": "vitest --run",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "mcp",
+    "slack",
+    "claude",
+    "claude-code",
+    "model-context-protocol"
+  ],
+  "author": "Vladimir Urushev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pilat/mcp-slack"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/pilat/mcp-slack",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@slack/web-api": "^7.0.0",
+    "better-sqlite3": "^12.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.39.2",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.51.0",
+    "vitest": "^4.0.17"
+  }
+}
