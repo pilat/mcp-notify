@@ -11,7 +11,7 @@ const SERVER_INSTRUCTIONS = `Slack message sender. Use send_message to post mess
 export function createServer(): Server {
   const server = new Server(
     {
-      name: 'mcp-slack',
+      name: 'mcp-notify',
       version: '1.0.0',
     },
     {
