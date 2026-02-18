@@ -11,7 +11,7 @@ const SERVER_INSTRUCTIONS = `Slack message sender. Use send_message to post mess
 export function createServer(): Server {
   const server = new Server(
     {
-      name: 'mcp-slack',
+      name: 'mcp-notify',
       version: '1.0.0',
     },
     {
@@ -103,15 +103,16 @@ NEVER use: **bold**, [link](url), # headers, tables, ---, ![images]. These rende
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error(String(error));
+      throw new Error(String(error), { cause: error });
     }
   });
 
   return server;
 }
 
-export async function runServer(): Promise<void> {
+export async function runServer(): Promise<Server> {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  return server;
 }

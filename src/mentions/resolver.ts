@@ -8,6 +8,8 @@ import { resolveUserGroup, resolveUser } from '../cache/users.js';
  * - @username → <@ID>
  * - Unknown mentions are left as-is.
  */
+const SLACK_BROADCAST_MENTIONS: ReadonlySet<string> = new Set(['here', 'channel', 'everyone']);
+
 export async function convertMentions(message: string, client: WebClient): Promise<string> {
   if (!message.includes('@')) return message;
 
@@ -23,6 +25,9 @@ export async function convertMentions(message: string, client: WebClient): Promi
   // Resolve all mentions in parallel
   const entries = await Promise.all(
     [...names].map(async (name): Promise<[string, string | null]> => {
+      // Slack broadcast mentions: @here, @channel, @everyone
+      if (SLACK_BROADCAST_MENTIONS.has(name)) return [name, `<!${name}>`];
+
       const groupId = await resolveUserGroup(name, client);
       if (groupId) return [name, `<!subteam^${groupId}>`];
 

@@ -8,7 +8,7 @@ let db: Database.Database | null = null;
 export function getDb(): Database.Database {
   if (db) return db;
 
-  const dataDir = process.env.SLACK_MCP_DATA_DIR ?? join(homedir(), '.local', 'share', 'mcp-slack');
+  const dataDir = process.env.SLACK_MCP_DATA_DIR ?? join(homedir(), '.local', 'share', 'mcp-notify');
   mkdirSync(dataDir, { recursive: true });
 
   const dbPath = join(dataDir, 'data.db');
