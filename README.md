@@ -30,11 +30,12 @@ Add to your MCP config (`~/.claude/settings.json` or project settings):
 }
 ```
 
-### Manual
+### Other MCP clients
+
+Use `npx @pilat/mcp-slack` as the command with stdio transport. Pass credentials as environment variables:
 
 ```bash
-npm install -g @pilat/mcp-slack
-SLACK_MCP_XOXC_TOKEN=xoxc-... SLACK_MCP_XOXD_TOKEN=xoxd-... mcp-slack
+SLACK_MCP_XOXC_TOKEN=xoxc-... SLACK_MCP_XOXD_TOKEN=xoxd-... npx @pilat/mcp-slack
 ```
 
 ## Environment Variables
@@ -61,12 +62,3 @@ Single tool: `send_message`. Messages are sent with Block Kit (section + context
 - **SQLite cache** (`~/.local/share/mcp-slack/data.db`, WAL mode) — channels, users, user groups with lazy sync on first cache miss, 24h TTL
 - **Mention resolution** — `@username` → `<@U123>`, `@grouphandle` → `<!subteam^ID>`. Groups take priority. Resolved in parallel.
 - **Concurrent sync safety** — CAS-based check-lock-recheck pattern via `sync_meta` table
-
-## Development
-
-```bash
-npm install       # installs deps and builds automatically
-npm run build     # TypeScript compile
-npm run lint      # ESLint
-npm test          # vitest
-```
