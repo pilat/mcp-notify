@@ -1,12 +1,20 @@
 import type { WebClient } from '@slack/web-api';
 import { getDb } from './db.js';
-import { syncIfNeeded, isTableSynced, CACHE_TTL_MS } from './sync.js';
+import { syncIfNeeded, CACHE_TTL_MS } from './sync.js';
 
-function lookupChannel(name: string): string | null {
+function lookupChannelByName(name: string): string | null {
   const db = getDb();
   const row = db.prepare(
     'SELECT id FROM channels WHERE name = ? AND synced_at > ?'
   ).get(name, Date.now() - CACHE_TTL_MS) as { id: string } | undefined;
+  return row?.id ?? null;
+}
+
+function lookupChannelById(id: string): string | null {
+  const db = getDb();
+  const row = db.prepare(
+    'SELECT id FROM channels WHERE id = ? AND synced_at > ?'
+  ).get(id, Date.now() - CACHE_TTL_MS) as { id: string } | undefined;
   return row?.id ?? null;
 }
 
@@ -45,13 +53,16 @@ async function fetchChannels(client: WebClient): Promise<void> {
   tx();
 }
 
-export async function getChannelId(name: string, client: WebClient): Promise<string | null> {
-  const cached = lookupChannel(name);
-  if (cached !== null) return cached;
+export async function getChannelId(input: string, client: WebClient): Promise<string | null> {
+  const byName = lookupChannelByName(input);
+  if (byName !== null) return byName;
 
-  if (!isTableSynced('channels')) {
-    return syncIfNeeded('channels', () => lookupChannel(name), () => fetchChannels(client));
-  }
+  const byId = lookupChannelById(input);
+  if (byId !== null) return byId;
 
-  return null;
+  return syncIfNeeded(
+    'channels',
+    () => lookupChannelByName(input) ?? lookupChannelById(input),
+    () => fetchChannels(client),
+  );
 }
