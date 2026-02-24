@@ -1,6 +1,6 @@
 {
   "name": "@pilat/mcp-notify",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for sending Slack messages as user (xoxc + cookie auth)",
   "type": "module",
   "main": "dist/index.js",
