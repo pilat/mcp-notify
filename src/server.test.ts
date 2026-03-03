@@ -72,16 +72,16 @@ describe('ListTools handler', () => {
   it('tool has correct required properties', async () => {
     const response = await getListToolsHandler()({}) as { tools: Array<{ inputSchema: { required: string[] } }> };
 
-    expect(response.tools[0]!.inputSchema.required).toEqual(['channel_name', 'message']);
+    expect(response.tools[0]!.inputSchema.required).toEqual(['channel', 'message']);
   });
 
-  it('tool describes channel_name, message, and thread_ts properties', async () => {
+  it('tool describes channel, message, and thread_ts properties', async () => {
     const response = await getListToolsHandler()({}) as {
       tools: Array<{ inputSchema: { properties: Record<string, unknown> } }>;
     };
 
     const props = response.tools[0]!.inputSchema.properties;
-    expect(props).toHaveProperty('channel_name');
+    expect(props).toHaveProperty('channel');
     expect(props).toHaveProperty('message');
     expect(props).toHaveProperty('thread_ts');
   });
@@ -93,7 +93,7 @@ describe('CallTool handler', () => {
       mockSendMessage.mockResolvedValue({
         status: 'success',
         message: 'Message sent successfully',
-        channel_name: 'general',
+        channel: 'general',
         channel_id: 'C123',
         message_ts: '111.222',
         sent_message: 'hello',
@@ -102,12 +102,12 @@ describe('CallTool handler', () => {
       const response = await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 'general', message: 'hello' },
+          arguments: { channel: 'general', message: 'hello' },
         },
       }) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 
       expect(mockSendMessage).toHaveBeenCalledWith({
-        channel_name: 'general',
+        channel: 'general',
         message: 'hello',
         thread_ts: undefined,
       });
@@ -129,12 +129,12 @@ describe('CallTool handler', () => {
       await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 'dev', message: 'reply', thread_ts: '999.888' },
+          arguments: { channel: 'dev', message: 'reply', thread_ts: '999.888' },
         },
       });
 
       expect(mockSendMessage).toHaveBeenCalledWith({
-        channel_name: 'dev',
+        channel: 'dev',
         message: 'reply',
         thread_ts: '999.888',
       });
@@ -149,12 +149,12 @@ describe('CallTool handler', () => {
       await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 'dev', message: 'hello', thread_ts: 12345 },
+          arguments: { channel: 'dev', message: 'hello', thread_ts: 12345 },
         },
       });
 
       expect(mockSendMessage).toHaveBeenCalledWith({
-        channel_name: 'dev',
+        channel: 'dev',
         message: 'hello',
         thread_ts: undefined,
       });
@@ -162,7 +162,7 @@ describe('CallTool handler', () => {
   });
 
   describe('validation errors', () => {
-    it('returns error when channel_name is missing', async () => {
+    it('returns error when channel is missing', async () => {
       const response = await getCallToolHandler()({
         params: {
           name: 'send_message',
@@ -173,14 +173,14 @@ describe('CallTool handler', () => {
       expect(response.isError).toBe(true);
       const parsed = JSON.parse(response.content[0]!.text) as Record<string, unknown>;
       expect(parsed['code']).toBe('SEND_FAILED');
-      expect(parsed['message']).toContain('channel_name');
+      expect(parsed['message']).toContain('channel');
     });
 
     it('returns error when message is missing', async () => {
       const response = await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 'general' },
+          arguments: { channel: 'general' },
         },
       }) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 
@@ -190,11 +190,11 @@ describe('CallTool handler', () => {
       expect(parsed['message']).toContain('message');
     });
 
-    it('returns error when channel_name is not a string', async () => {
+    it('returns error when channel is not a string', async () => {
       const response = await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 123, message: 'hello' },
+          arguments: { channel: 123, message: 'hello' },
         },
       }) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 
@@ -222,7 +222,7 @@ describe('CallTool handler', () => {
       const response = await getCallToolHandler()({
         params: {
           name: 'send_message',
-          arguments: { channel_name: 'nonexistent', message: 'hello' },
+          arguments: { channel: 'nonexistent', message: 'hello' },
         },
       }) as { content: Array<{ type: string; text: string }>; isError?: boolean };
 
@@ -239,7 +239,7 @@ describe('CallTool handler', () => {
         getCallToolHandler()({
           params: {
             name: 'send_message',
-            arguments: { channel_name: 'general', message: 'hello' },
+            arguments: { channel: 'general', message: 'hello' },
           },
         })
       ).rejects.toThrow('unexpected');
@@ -252,7 +252,7 @@ describe('CallTool handler', () => {
         getCallToolHandler()({
           params: {
             name: 'send_message',
-            arguments: { channel_name: 'general', message: 'hello' },
+            arguments: { channel: 'general', message: 'hello' },
           },
         })
       ).rejects.toThrow('string-error');

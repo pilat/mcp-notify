@@ -115,6 +115,15 @@ describe('getChannelId', () => {
     expect(result).toBe('C555');
   });
 
+  it('strips # prefix from channel name', async () => {
+    mockGetDb.mockReturnValue(createMockDb([{ id: 'C111', name: 'general' }]) as ReturnType<typeof getDb>);
+
+    const result = await getChannelId('#general', mockClient);
+
+    expect(result).toBe('C111');
+    expect(mockSyncIfNeeded).not.toHaveBeenCalled();
+  });
+
   it('combined lookup finds by ID when name misses', async () => {
     const dbWithChannel = createMockDb([{ id: 'C666', name: 'something-else' }]);
     const emptyDb = createMockDb([]);

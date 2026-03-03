@@ -53,7 +53,8 @@ async function fetchChannels(client: WebClient): Promise<void> {
   tx();
 }
 
-export async function getChannelId(input: string, client: WebClient): Promise<string | null> {
+export async function getChannelId(rawInput: string, client: WebClient): Promise<string | null> {
+  const input = rawInput.startsWith('#') ? rawInput.slice(1) : rawInput;
   const byName = lookupChannelByName(input);
   if (byName !== null) return byName;
 

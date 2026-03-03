@@ -49,14 +49,14 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('hello world');
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: 'hello world',
       });
 
       expect(result).toEqual({
         status: 'success',
         message: 'Message sent successfully',
-        channel_name: 'general',
+        channel: 'general',
         channel_id: 'C12345',
         message_ts: '1111.2222',
         sent_message: 'hello world',
@@ -93,7 +93,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('thread reply');
 
       const result = await sendMessage({
-        channel_name: 'dev',
+        channel: 'dev',
         message: 'thread reply',
         thread_ts: '1718033467.085279',
       });
@@ -113,7 +113,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('hey <@U123> check this');
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: 'hey @john check this',
       });
 
@@ -128,7 +128,7 @@ describe('sendMessage', () => {
       mockGetSlackClient.mockReturnValue(mockClient);
 
       try {
-        await sendMessage({ channel_name: 'general', message: 'test', thread_ts: 'bad-format' });
+        await sendMessage({ channel: 'general', message: 'test', thread_ts: 'bad-format' });
         expect.unreachable('should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(SlackMcpError);
@@ -145,7 +145,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('test');
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: 'test',
         thread_ts: '1718033467.085279',
       });
@@ -162,7 +162,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue(longMessage);
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: longMessage,
       });
 
@@ -184,7 +184,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue(exactMessage);
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: exactMessage,
       });
 
@@ -203,11 +203,11 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('hello');
 
       await expect(
-        sendMessage({ channel_name: 'nonexistent', message: 'hello' })
+        sendMessage({ channel: 'nonexistent', message: 'hello' })
       ).rejects.toThrow(SlackMcpError);
 
       try {
-        await sendMessage({ channel_name: 'nonexistent', message: 'hello' });
+        await sendMessage({ channel: 'nonexistent', message: 'hello' });
       } catch (err) {
         expect(err).toBeInstanceOf(SlackMcpError);
         const slackErr = err as SlackMcpError;
@@ -229,7 +229,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('fallback msg');
 
       const result = await sendMessage({
-        channel_name: 'general',
+        channel: 'general',
         message: 'fallback msg',
       });
 
@@ -253,7 +253,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('test');
 
       try {
-        await sendMessage({ channel_name: 'deleted-channel', message: 'test' });
+        await sendMessage({ channel: 'deleted-channel', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(SlackMcpError);
@@ -278,7 +278,7 @@ describe('sendMessage', () => {
       setupDoubleFailure('not_in_channel');
 
       try {
-        await sendMessage({ channel_name: 'private', message: 'test' });
+        await sendMessage({ channel: 'private', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         const slackErr = err as SlackMcpError;
@@ -291,7 +291,7 @@ describe('sendMessage', () => {
       setupDoubleFailure('restricted_action');
 
       try {
-        await sendMessage({ channel_name: 'locked', message: 'test' });
+        await sendMessage({ channel: 'locked', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         const slackErr = err as SlackMcpError;
@@ -304,7 +304,7 @@ describe('sendMessage', () => {
       setupDoubleFailure('thread_not_found');
 
       try {
-        await sendMessage({ channel_name: 'general', message: 'test' });
+        await sendMessage({ channel: 'general', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         const slackErr = err as SlackMcpError;
@@ -317,7 +317,7 @@ describe('sendMessage', () => {
       setupDoubleFailure('some_unknown_api_error');
 
       try {
-        await sendMessage({ channel_name: 'general', message: 'test' });
+        await sendMessage({ channel: 'general', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         const slackErr = err as SlackMcpError;
@@ -337,7 +337,7 @@ describe('sendMessage', () => {
       mockConvertMentions.mockResolvedValue('test');
 
       try {
-        await sendMessage({ channel_name: 'general', message: 'test' });
+        await sendMessage({ channel: 'general', message: 'test' });
         expect.unreachable('should have thrown');
       } catch (err) {
         const slackErr = err as SlackMcpError;

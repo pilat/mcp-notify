@@ -5,8 +5,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { sendMessage } from './slack/send.js';
 import { SlackMcpError, ErrorCode } from './utils/errors.js';
 
-const SERVER_INSTRUCTIONS = `Slack message sender. Use send_message to post messages to channels or reply to threads.
-@mentions like @username are automatically resolved to Slack user IDs.`;
+const SERVER_INSTRUCTIONS = `Slack message sender (write-only). Single tool: send_message. @mentions are auto-resolved. Uses Slack mrkdwn, not Markdown.`;
 
 export function createServer(): Server {
   const server = new Server(
@@ -26,43 +25,39 @@ export function createServer(): Server {
     tools: [
       {
         name: 'send_message',
-        description: `Send a message to a Slack channel or thread as the authenticated user. Messages are tagged with a :robot_face: indicator so recipients know AI assisted.
+        description: `Send a message to a Slack channel or thread as the authenticated user. Every message is automatically tagged with :robot_face: so recipients know it was AI-assisted.
 
-WHEN TO USE: User asks to post, send, write, notify, tell, or reply in Slack.
+NOTE: This tool posts to channels only. DMs are not supported.
 
-MENTIONS: Write @username or @groupname naturally — they are auto-resolved to Slack IDs. Do NOT manually construct <@U...> syntax.
+MENTIONS: Write @username or @groupname naturally — they are auto-resolved. Do NOT construct <@U...> syntax manually.
 
-THREAD REPLIES: To reply in a thread, provide thread_ts. Extract from Slack URLs by converting the p-prefixed ID: p1718033467085279 → 1718033467.085279 (insert dot before last 6 digits).
+SLACK URLs: When given a Slack URL like .../archives/C0AGCGG628K/p1718033467085279:
+  - Channel ID: the segment after /archives/ → pass as channel
+  - Thread timestamp: strip "p", insert dot before last 6 digits → "1718033467.085279"
+  Prefer channel ID over channel name when both are available.
 
-CRITICAL — Use Slack mrkdwn, NOT Markdown:
-  *bold*          (NOT **bold**)
-  _italic_        (NOT *italic*)
-  ~strikethrough~
-  \`inline code\`
-  \`\`\`code block\`\`\`
-  <https://url.com|link text>  (NOT [text](url))
-  > blockquote
-  • or - for bullets, 1. for numbered lists
-  :emoji_name: for emoji
-
-NEVER use: **bold**, [link](url), # headers, tables, ---, ![images]. These render as literal text in Slack.`,
+FORMAT — Slack mrkdwn (NOT Markdown):
+  *bold*  _italic_  ~strike~  \`code\`  \`\`\`block\`\`\`
+  <https://url|link text>  > quote  • bullets
+  :emoji_name:
+  NEVER use: **bold**, [text](url), # headers, --- rules, tables, ![images].`,
         inputSchema: {
           type: 'object',
           properties: {
-            channel_name: {
+            channel: {
               type: 'string',
-              description: 'Channel name without # prefix (e.g. "general", "team-backend"). Works with public and private channels you have access to.',
+              description: 'Channel name (without #) or channel ID. Examples: "general", "C0AGCGG628K". Prefer ID when available; never guess a name you weren\'t given.',
             },
             message: {
               type: 'string',
-              description: 'Message content in Slack mrkdwn format. IMPORTANT: Use *bold* not **bold**, use <url|text> not [text](url). @mentions like @username are auto-resolved.',
+              description: 'Message text in Slack mrkdwn format. @mentions are auto-resolved.',
             },
             thread_ts: {
               type: 'string',
-              description: 'Thread timestamp to reply in a thread (e.g. "1718033467.085279"). From Slack URLs: strip the "p" prefix and insert a dot before the last 6 digits.',
+              description: 'Thread timestamp for replying in a thread (e.g. "1718033467.085279"). See URL extraction in tool description.',
             },
           },
-          required: ['channel_name', 'message'],
+          required: ['channel', 'message'],
         },
       },
     ],
@@ -75,14 +70,14 @@ NEVER use: **bold**, [link](url), # headers, tables, ---, ![images]. These rende
       switch (name) {
         case 'send_message': {
           const params = args as Record<string, unknown> | undefined;
-          if (!params?.channel_name || typeof params.channel_name !== 'string') {
-            throw new SlackMcpError(ErrorCode.SEND_FAILED, 'channel_name is required and must be a string');
+          if (!params?.channel || typeof params.channel !== 'string') {
+            throw new SlackMcpError(ErrorCode.SEND_FAILED, 'channel is required and must be a string');
           }
           if (!params?.message || typeof params.message !== 'string') {
             throw new SlackMcpError(ErrorCode.SEND_FAILED, 'message is required and must be a string');
           }
           const result = await sendMessage({
-            channel_name: params.channel_name,
+            channel: params.channel,
             message: params.message,
             thread_ts: typeof params.thread_ts === 'string' ? params.thread_ts : undefined,
           });
