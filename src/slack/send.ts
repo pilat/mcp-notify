@@ -22,11 +22,11 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
   const convertedMessage = await convertMentions(params.message, client);
 
   // Resolve channel
-  const channelId = await getChannelId(params.channel_name, client);
+  const channelId = await getChannelId(params.channel, client);
   if (!channelId) {
     throw new SlackMcpError(
       ErrorCode.CHANNEL_NOT_FOUND,
-      `Channel "#${params.channel_name}" not found. Check the channel name and ensure you have access.`
+      `Channel "${params.channel}" not found (tried as both name and ID). Verify it exists and you have access.`
     );
   }
 
@@ -40,7 +40,7 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
   const makeResult = (ts: string | undefined, fallback: boolean): SendMessageResult => ({
     status: 'success',
     message: fallback ? 'Message sent successfully (plain text fallback)' : 'Message sent successfully',
-    channel_name: params.channel_name,
+    channel: params.channel,
     channel_id: channelId,
     message_ts: ts,
     sent_message: convertedMessage,
@@ -49,7 +49,7 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
 
   // Skip Block Kit if message exceeds the 3000-char section limit
   if (convertedMessage.length > BLOCK_KIT_TEXT_LIMIT) {
-    return sendPlainText(client, baseArgs, convertedMessage, params.channel_name, makeResult);
+    return sendPlainText(client, baseArgs, convertedMessage, params.channel, makeResult);
   }
 
   // Build Block Kit blocks
@@ -76,10 +76,10 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
   } catch (blockKitError: unknown) {
     // Fallback to plain text without blocks
     try {
-      return await sendPlainText(client, baseArgs, convertedMessage, params.channel_name, makeResult);
+      return await sendPlainText(client, baseArgs, convertedMessage, params.channel, makeResult);
     } catch {
       const err = blockKitError instanceof Error ? blockKitError : new Error(String(blockKitError));
-      throw mapSlackError(err, params.channel_name);
+      throw mapSlackError(err, params.channel);
     }
   }
 }
@@ -109,19 +109,19 @@ function mapSlackError(error: Error, channelName: string): SlackMcpError {
   if (msg.includes('channel_not_found')) {
     return new SlackMcpError(
       ErrorCode.CHANNEL_NOT_FOUND,
-      `Channel "#${channelName}" not found. It may not exist or you may not have access.`
+      `Channel "${channelName}" not found. It may not exist or you may not have access.`
     );
   }
   if (msg.includes('not_in_channel')) {
     return new SlackMcpError(
       ErrorCode.SEND_FAILED,
-      `You are not a member of "#${channelName}". Join the channel first.`
+      `You are not a member of "${channelName}". Join the channel first.`
     );
   }
   if (msg.includes('restricted_action')) {
     return new SlackMcpError(
       ErrorCode.SEND_FAILED,
-      `Restricted action: you don't have permission to post in "#${channelName}".`
+      `Restricted action: you don't have permission to post in "${channelName}".`
     );
   }
   if (msg.includes('thread_not_found')) {
