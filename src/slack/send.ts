@@ -18,6 +18,14 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     );
   }
 
+  // Validate reply_broadcast requires thread_ts
+  if (params.reply_broadcast && !params.thread_ts) {
+    throw new SlackMcpError(
+      ErrorCode.SEND_FAILED,
+      'reply_broadcast requires thread_ts. You can only broadcast a thread reply to the channel.'
+    );
+  }
+
   // Resolve mentions
   const convertedMessage = await convertMentions(params.message, client);
 
@@ -30,12 +38,13 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     );
   }
 
-  const baseArgs = {
-    channel: channelId,
-    unfurl_links: false,
-    unfurl_media: false,
-    ...(params.thread_ts ? { thread_ts: params.thread_ts } : {}),
-  };
+  const sharedArgs = { channel: channelId, unfurl_links: false, unfurl_media: false };
+
+  const baseArgs = params.reply_broadcast && params.thread_ts
+    ? { ...sharedArgs, thread_ts: params.thread_ts, reply_broadcast: true }
+    : params.thread_ts
+      ? { ...sharedArgs, thread_ts: params.thread_ts }
+      : sharedArgs;
 
   const makeResult = (ts: string | undefined, fallback: boolean): SendMessageResult => ({
     status: 'success',
@@ -45,6 +54,7 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     message_ts: ts,
     sent_message: convertedMessage,
     thread_ts: params.thread_ts,
+    reply_broadcast: params.reply_broadcast,
   });
 
   // Skip Block Kit if message exceeds the 3000-char section limit

@@ -122,6 +122,62 @@ describe('sendMessage', () => {
     });
   });
 
+  describe('reply_broadcast', () => {
+    it('sends reply_broadcast when thread_ts is provided', async () => {
+      const mockClient = createMockClient({ ts: '5555.6666' });
+      mockGetSlackClient.mockReturnValue(mockClient);
+      mockGetChannelId.mockResolvedValue('C12345');
+      mockConvertMentions.mockResolvedValue('broadcast reply');
+
+      const result = await sendMessage({
+        channel: 'general',
+        message: 'broadcast reply',
+        thread_ts: '1718033467.085279',
+        reply_broadcast: true,
+      });
+
+      expect(result.status).toBe('success');
+      expect(result.reply_broadcast).toBe(true);
+
+      const postMessage = vi.mocked(mockClient.chat.postMessage);
+      const callArgs = postMessage.mock.calls[0]?.[0];
+      expect(callArgs!.thread_ts).toBe('1718033467.085279');
+      expect(callArgs!.reply_broadcast).toBe(true);
+    });
+
+    it('throws SEND_FAILED when reply_broadcast is used without thread_ts', async () => {
+      const mockClient = createMockClient();
+      mockGetSlackClient.mockReturnValue(mockClient);
+
+      try {
+        await sendMessage({ channel: 'general', message: 'test', reply_broadcast: true });
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(SlackMcpError);
+        const slackErr = err as SlackMcpError;
+        expect(slackErr.code).toBe(ErrorCode.SEND_FAILED);
+        expect(slackErr.message).toContain('reply_broadcast requires thread_ts');
+      }
+    });
+
+    it('does not include reply_broadcast when not specified', async () => {
+      const mockClient = createMockClient();
+      mockGetSlackClient.mockReturnValue(mockClient);
+      mockGetChannelId.mockResolvedValue('C12345');
+      mockConvertMentions.mockResolvedValue('test');
+
+      await sendMessage({
+        channel: 'general',
+        message: 'test',
+        thread_ts: '1718033467.085279',
+      });
+
+      const postMessage = vi.mocked(mockClient.chat.postMessage);
+      const callArgs = postMessage.mock.calls[0]?.[0];
+      expect(callArgs!.reply_broadcast).toBeUndefined();
+    });
+  });
+
   describe('thread_ts validation', () => {
     it('throws SEND_FAILED for invalid thread_ts format', async () => {
       const mockClient = createMockClient();

@@ -84,6 +84,7 @@ describe('ListTools handler', () => {
     expect(props).toHaveProperty('channel');
     expect(props).toHaveProperty('message');
     expect(props).toHaveProperty('thread_ts');
+    expect(props).toHaveProperty('reply_broadcast');
   });
 });
 
@@ -110,6 +111,7 @@ describe('CallTool handler', () => {
         channel: 'general',
         message: 'hello',
         thread_ts: undefined,
+        reply_broadcast: undefined,
       });
 
       expect(response.content).toHaveLength(1);
@@ -137,6 +139,52 @@ describe('CallTool handler', () => {
         channel: 'dev',
         message: 'reply',
         thread_ts: '999.888',
+      });
+    });
+
+    it('passes reply_broadcast when provided', async () => {
+      mockSendMessage.mockResolvedValue({
+        status: 'success',
+        message: 'sent',
+        channel: 'dev',
+        thread_ts: '999.888',
+        reply_broadcast: true,
+      });
+
+      await getCallToolHandler()({
+        params: {
+          name: 'send_message',
+          arguments: { channel: 'dev', message: 'reply', thread_ts: '999.888', reply_broadcast: true },
+        },
+      });
+
+      expect(mockSendMessage).toHaveBeenCalledWith({
+        channel: 'dev',
+        message: 'reply',
+        thread_ts: '999.888',
+        reply_broadcast: true,
+      });
+    });
+
+    it('ignores non-boolean reply_broadcast', async () => {
+      mockSendMessage.mockResolvedValue({
+        status: 'success',
+        message: 'sent',
+        channel: 'dev',
+      });
+
+      await getCallToolHandler()({
+        params: {
+          name: 'send_message',
+          arguments: { channel: 'dev', message: 'hello', reply_broadcast: 'yes' },
+        },
+      });
+
+      expect(mockSendMessage).toHaveBeenCalledWith({
+        channel: 'dev',
+        message: 'hello',
+        thread_ts: undefined,
+        reply_broadcast: undefined,
       });
     });
 
