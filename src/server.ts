@@ -56,6 +56,10 @@ FORMAT — Slack mrkdwn (NOT Markdown):
               type: 'string',
               description: 'Thread timestamp for replying in a thread (e.g. "1718033467.085279"). See URL extraction in tool description.',
             },
+            reply_broadcast: {
+              type: 'boolean',
+              description: 'When replying in a thread (thread_ts required), also post the message to the channel. Like the "Also send to #channel" checkbox in Slack.',
+            },
           },
           required: ['channel', 'message'],
         },
@@ -80,6 +84,7 @@ FORMAT — Slack mrkdwn (NOT Markdown):
             channel: params.channel,
             message: params.message,
             thread_ts: typeof params.thread_ts === 'string' ? params.thread_ts : undefined,
+            reply_broadcast: typeof params.reply_broadcast === 'boolean' ? params.reply_broadcast : undefined,
           });
           return {
             content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
