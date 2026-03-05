@@ -1,6 +1,6 @@
 import type { SendMessageParams, SendMessageResult } from '../types.js';
 import { SlackMcpError, ErrorCode } from '../utils/errors.js';
-import { getSlackClient } from './client.js';
+import { getSlackClient, isBotMode } from './client.js';
 import { getChannelId } from '../cache/channels.js';
 import { convertMentions } from '../mentions/resolver.js';
 
@@ -63,18 +63,22 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
   }
 
   // Build Block Kit blocks
-  const blocks = [
-    {
-      type: 'section',
-      text: { type: 'mrkdwn', text: convertedMessage },
-    },
-    {
-      type: 'context',
-      elements: [
-        { type: 'mrkdwn', text: ':robot_face: Sent by AI assistant' },
-      ],
-    },
-  ];
+  const sectionBlock = {
+    type: 'section' as const,
+    text: { type: 'mrkdwn' as const, text: convertedMessage },
+  };
+
+  const blocks = isBotMode()
+    ? [sectionBlock]
+    : [
+        sectionBlock,
+        {
+          type: 'context' as const,
+          elements: [
+            { type: 'mrkdwn' as const, text: ':robot_face: Sent by AI assistant' },
+          ],
+        },
+      ];
 
   try {
     const result = await client.chat.postMessage({
@@ -104,7 +108,7 @@ async function sendPlainText(
   try {
     const result = await client.chat.postMessage({
       ...baseArgs,
-      text: `:robot_face: ${message}`,
+      text: isBotMode() ? message : `:robot_face: ${message}`,
     });
     return makeResult(result.ts, true);
   } catch (error: unknown) {

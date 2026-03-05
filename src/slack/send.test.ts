@@ -5,6 +5,7 @@ import { SlackMcpError, ErrorCode } from '../utils/errors.js';
 // Mock all external dependencies
 vi.mock('./client.js', () => ({
   getSlackClient: vi.fn(),
+  isBotMode: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock('../cache/channels.js', () => ({
@@ -16,11 +17,12 @@ vi.mock('../mentions/resolver.js', () => ({
 }));
 
 import { sendMessage } from './send.js';
-import { getSlackClient } from './client.js';
+import { getSlackClient, isBotMode } from './client.js';
 import { getChannelId } from '../cache/channels.js';
 import { convertMentions } from '../mentions/resolver.js';
 
 const mockGetSlackClient = vi.mocked(getSlackClient);
+const mockIsBotMode = vi.mocked(isBotMode);
 const mockGetChannelId = vi.mocked(getChannelId);
 const mockConvertMentions = vi.mocked(convertMentions);
 
@@ -316,6 +318,60 @@ describe('sendMessage', () => {
         const slackErr = err as SlackMcpError;
         expect(slackErr.code).toBe(ErrorCode.CHANNEL_NOT_FOUND);
       }
+    });
+  });
+
+  describe('bot mode', () => {
+    beforeEach(() => {
+      mockIsBotMode.mockReturnValue(true);
+    });
+
+    it('sends Block Kit without context block', async () => {
+      const mockClient = createMockClient({ ts: '1111.2222' });
+      mockGetSlackClient.mockReturnValue(mockClient);
+      mockGetChannelId.mockResolvedValue('C12345');
+      mockConvertMentions.mockResolvedValue('bot message');
+
+      const result = await sendMessage({ channel: 'general', message: 'bot message' });
+
+      expect(result.status).toBe('success');
+
+      const postMessage = vi.mocked(mockClient.chat.postMessage);
+      const callArgs = postMessage.mock.calls[0]?.[0];
+      expect(callArgs!.blocks).toEqual([
+        { type: 'section', text: { type: 'mrkdwn', text: 'bot message' } },
+      ]);
+    });
+
+    it('sends plain text without robot_face prefix', async () => {
+      const postMessage = vi.fn()
+        .mockRejectedValueOnce(new Error('invalid_blocks'))
+        .mockResolvedValueOnce({ ok: true, ts: '5555.6666' });
+
+      const mockClient = { chat: { postMessage } } as unknown as WebClient;
+      mockGetSlackClient.mockReturnValue(mockClient);
+      mockGetChannelId.mockResolvedValue('C12345');
+      mockConvertMentions.mockResolvedValue('fallback msg');
+
+      await sendMessage({ channel: 'general', message: 'fallback msg' });
+
+      const secondCallArgs = postMessage.mock.calls[1]?.[0];
+      expect(secondCallArgs!.text).toBe('fallback msg');
+    });
+
+    it('sends long messages without robot_face prefix', async () => {
+      const longMessage = 'x'.repeat(3001);
+      const mockClient = createMockClient({ ts: '7777.8888' });
+      mockGetSlackClient.mockReturnValue(mockClient);
+      mockGetChannelId.mockResolvedValue('C12345');
+      mockConvertMentions.mockResolvedValue(longMessage);
+
+      await sendMessage({ channel: 'general', message: longMessage });
+
+      const postMessage = vi.mocked(mockClient.chat.postMessage);
+      const callArgs = postMessage.mock.calls[0]?.[0];
+      expect(callArgs!.text).toBe(longMessage);
+      expect((callArgs!.text as string).startsWith(':robot_face:')).toBe(false);
     });
   });
 
