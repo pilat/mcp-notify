@@ -11,7 +11,7 @@ export function createServer(): Server {
   const server = new Server(
     {
       name: 'mcp-notify',
-      version: '1.0.0',
+      version: '1.3.0',
     },
     {
       capabilities: {
@@ -25,7 +25,7 @@ export function createServer(): Server {
     tools: [
       {
         name: 'send_message',
-        description: `Send a message to a Slack channel or thread as the authenticated user. Every message is automatically tagged with :robot_face: so recipients know it was AI-assisted.
+        description: `Send a message to a Slack channel or thread. In user-token mode, messages are tagged with :robot_face: so recipients know it was AI-assisted. In bot-token mode, the app identity serves this purpose.
 
 NOTE: This tool posts to channels only. DMs are not supported.
 
